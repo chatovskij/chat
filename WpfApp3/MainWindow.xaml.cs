@@ -13,12 +13,12 @@ namespace WpfApp3
     /// </summary>
     public partial class MainWindow : Window
     {
-        bool alive = false; // does thread works for receiving?
+        bool threadAlivForReceivinge = false; 
         UdpClient client;
-        const int LOCALPORT = 8002; // receive port
-        const int REMOTEPORT = 8002; // send port
-        const string HOST = "192.168.0.255";
-        private static IPAddress remoteIPAddress = IPAddress.Parse(HOST); //for group broadcast
+        const int localPort = 8002;
+        const int remotePort = 8002;
+        const string hostAddress = "192.168.0.255";
+        private static IPAddress remoteIPAddress = IPAddress.Parse(hostAddress); //for group broadcast
 
         string userName;
 
@@ -44,10 +44,10 @@ namespace WpfApp3
 
             try
             {
-                client = new UdpClient(LOCALPORT);
+                client = new UdpClient(localPort);
                 // connect to the group broadcasting
                 //client.JoinMulticastGroup(groupAddress, TTL); //error here
-                IPEndPoint endPoint = new IPEndPoint(remoteIPAddress, REMOTEPORT);
+                IPEndPoint endPoint = new IPEndPoint(remoteIPAddress, remotePort);
 
                 // run the task for receive messages
                 Task receiveTask = new Task(ReceiveMessages);
@@ -56,7 +56,7 @@ namespace WpfApp3
                 // send the message about entering of the new user 
                 string message = userName + " entered to the chat\r\n";
                 byte[] data = Encoding.Unicode.GetBytes(message);
-                client.Send(data, data.Length, HOST, REMOTEPORT);
+                client.Send(data, data.Length, hostAddress, remotePort);
 
                 loginButton.IsEnabled = false;
                 logoutButton.IsEnabled = true;
@@ -70,10 +70,10 @@ namespace WpfApp3
 
         private void ReceiveMessages()
         {
-            alive = true;
+            threadAlivForReceivinge = true;
             try
             {
-                while (alive)
+                while (threadAlivForReceivinge)
                 {
                     IPEndPoint remoteIp = null;
                     byte[] data = client.Receive(ref remoteIp);
@@ -86,7 +86,7 @@ namespace WpfApp3
             }
             catch (ObjectDisposedException)
             {
-                if (!alive)
+                if (!threadAlivForReceivinge)
                     return;
                 throw;
             }
@@ -102,7 +102,7 @@ namespace WpfApp3
             {
                 string message = String.Format("{0}: {1}\r\n", userName, messageTextBox.Text);
                 byte[] data = Encoding.Unicode.GetBytes(message);
-                client.Send(data, data.Length, HOST, REMOTEPORT);
+                client.Send(data, data.Length, hostAddress, remotePort);
                 messageTextBox.Clear();
             }
             catch (Exception ex)
@@ -120,10 +120,10 @@ namespace WpfApp3
         {
             string message = userName + " left the chat\r\n";
             byte[] data = Encoding.Unicode.GetBytes(message);
-            client.Send(data, data.Length, HOST, REMOTEPORT);
+            client.Send(data, data.Length, hostAddress, remotePort);
             //client.DropMulticastGroup(groupAddress);
-            
-            alive = false;
+
+            threadAlivForReceivinge = false;
             client.Close();
 
             loginButton.IsEnabled = true;
@@ -133,7 +133,7 @@ namespace WpfApp3
 
         private void MainWindow_FormClosing(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            if (alive)
+            if (threadAlivForReceivinge)
                 ExitChat();
         }
 
